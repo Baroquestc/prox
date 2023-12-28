@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .vscode/
 .idea/
+input/
 output/
 models/
 __pycache__/
