@@ -1,0 +1,1 @@
+python render_results.py --focal_length_x 3584.4441960897707 --focal_length_y 3584.4441960897707 --camera_center_x 1031.041471225879 --camera_center_y 615.6558700385701

@@ -1,0 +1,14 @@
+numpy
+torchgeometry
+PyYAML
+configargparse
+smplx
+pillow
+opencv-python
+tqdm
+human_body_prior
+pyrender
+trimesh
+scipy
+open3d
+open3d-python
