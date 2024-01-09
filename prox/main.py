@@ -296,6 +296,7 @@ def main(**args):
                              right_hand_prior=right_hand_prior,
                              jaw_prior=jaw_prior,
                              angle_prior=angle_prior,
+                             render_front=True,
                              **args)
 
     elapsed = time.time() - start

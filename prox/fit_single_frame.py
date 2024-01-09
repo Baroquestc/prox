@@ -115,6 +115,7 @@ def fit_single_frame(img,
                      ### PROX
                      render_results=False,
                      camera_mode='moving',
+                     render_front=True,
                      ## Depth
                      s2m=False,
                      s2m_weights=None,
@@ -720,6 +721,11 @@ def fit_single_frame(img,
 
         out_mesh = trimesh.Trimesh(vertices, body_model.faces, process=False)
         out_mesh.export(mesh_fn)
+        
+        aroundy = cv2.Rodrigues(np.array([0, np.radians(-90.), 0]))[0]
+        center = vertices.mean(axis=0)
+        rot_vertices = np.dot((vertices - center), aroundy) + center
+        
     if render_results:
         # common
         # H, W = 1080, 1920
@@ -745,9 +751,13 @@ def fit_single_frame(img,
         material = pyrender.MetallicRoughnessMaterial(
             metallicFactor=0.0,
             alphaMode='OPAQUE',
-            baseColorFactor=(219/255., 112/255., 147/255, 1.0))
+            # MediumPurple
+            baseColorFactor=(147/255., 112/255., 219/255, 1.0))
         body_mesh = pyrender.Mesh.from_trimesh(
             out_mesh, material=material)
+        
+        rot_mesh = pyrender.Mesh.from_trimesh(
+            trimesh.Trimesh(rot_vertices, body_model.faces, process=False), material=material)
         
         ## rendering body
         img = img.detach().cpu().numpy()
@@ -755,15 +765,20 @@ def fit_single_frame(img,
         img = img[:, ::-1, :]
         H, W, _ = img.shape
 
-        scene = pyrender.Scene(bg_color=[0.0, 0.0, 0.0, 0.0],
-                               ambient_light=(0.3, 0.3, 0.3))
-        scene.add(camera, pose=camera_pose)
-        scene.add(light, pose=camera_pose)
+        if render_front:
+            scene = pyrender.Scene(bg_color=[0.0, 0.0, 0.0, 0.0],
+                                ambient_light=(0.3, 0.3, 0.3))
+            scene.add(camera, pose=camera_pose)
+            scene.add(light, pose=camera_pose)
+            scene.add(body_mesh, 'mesh')
+        else:
+            scene = pyrender.Scene(bg_color=[1.0, 1.0, 1.0, 1.0],
+                                ambient_light=(0.3, 0.3, 0.3))
+            scene.add(camera, pose=camera_pose)
+            scene.add(light, pose=camera_pose)
+            scene.add(rot_mesh, 'mesh')
         # for node in light_nodes:
         #     scene.add_node(node)
-
-        scene.add(body_mesh, 'mesh')
-
         r = pyrender.OffscreenRenderer(viewport_width=W,
                                        viewport_height=H,
                                        point_size=1.0)
@@ -782,8 +797,11 @@ def fit_single_frame(img,
         # output_img = (color[:, :, :-1] * valid_mask +
         #               (1-valid_mask) * input_img)
 
-        img = pil_img.fromarray((output_img * 255).astype(np.uint8))
-        img.save(out_img_fn)
+        img = pil_img.fromarray((color * 255).astype(np.uint8))
+        img.save(body_scene_rendering_fn)
+        
+        img_output = pil_img.fromarray((output_img * 255).astype(np.uint8))
+        img_output.save(out_img_fn)
 
         # ##redering body+scene
         # body_mesh = pyrender.Mesh.from_trimesh(
